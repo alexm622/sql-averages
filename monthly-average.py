@@ -21,10 +21,18 @@ def get_averages(db: mysql.connector.MySQLConnection, appid: int):
     for x in listResult:
         y = list(x)
         y = float(y[0])
-        avg = int(avg) + y
+        avg = float(avg) + y
     avg = avg / float(count)
 
-    return avg
+    cursor.execute("SELECT max FROM monthly_maxes WHERE appid = %s", appid)
+
+    result = cursor.fetchall()
+
+    listResult = list(result)
+    
+    maximum = max(listResult)
+
+    return avg, maximum
 
 db = mysql.connector.connect(
     host="10.0.0.6",
@@ -42,24 +50,35 @@ myresult = cursor.fetchall()
 listResult = list(myresult)
 
 avgs = []
+maximums = []
 appids = []
 for x in listResult:
     appids.append(x)
-    avgs.append(get_averages(db, x))
+    avg, maximim = get_averages(db, x)
+    avgs.append(avg)
+    maximums.append(maximim)
 
 
 temp = 0
 for x in appids:
     avg = avgs[temp]
-    avg = int(avg)
+    avg = float(avg)
     y = list(x)
-    y = int(y[0])
+    y = float(y[0])
     print(str(y))
     print(str(avg))
     val = (y, avg)
-    sql = "INSERT INTO monthly_table (appid, numplayers) VALUES (%s, %s)"
+    sql = "INSERT INTO yearly_table (appid, numplayers) VALUES (%s, %s)"
+    cursor.execute(sql, val)
+
+    maximum = maximums[temp]
+    maximum = list(maximum)
+    maximum = int(maximum[0])
+
+    val = (y, maximum)
+    sql = "INSERT INTO yearly_maxes (appid, max) VALUES (%s, %s)"
     cursor.execute(sql, val)
     db.commit()
     temp += 1
 
-#cursor.execute("DELETE FROM weekly_table")
+cursor.execute("DELETE FROM monthly_table")

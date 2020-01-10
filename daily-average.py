@@ -18,13 +18,14 @@ def get_averages(db: mysql.connector.MySQLConnection, appid: int):
     #get average
     count = len(listResult)
     avg = 0.0
+    maximum = max(listResult)
     for x in listResult:
         y = list(x)
         y = float(y[0])
-        avg = int(avg) + y
+        avg = float(avg) + y
     avg = avg / float(count)
 
-    return avg
+    return avg, maximum
 
 db = mysql.connector.connect(
     host="10.0.0.6",
@@ -43,15 +44,18 @@ listResult = list(myresult)
 
 avgs = []
 appids = []
+maximums = []
 for x in listResult:
     appids.append(x)
-    avgs.append(get_averages(db, x))
+    avg, maximum = get_averages(db, x)
+    avgs.append(avg)
+    maximums.append(maximum)
 
 
 temp = 0
 for x in appids:
     avg = avgs[temp]
-    avg = int(avg)
+    avg = float(avg)
     y = list(x)
     y = int(y[0])
     print(str(y))
@@ -59,7 +63,15 @@ for x in appids:
     val = (y, avg)
     sql = "INSERT INTO weekly_table (appid, numplayers) VALUES (%s, %s)"
     cursor.execute(sql, val)
+
+    maximum = maximums[temp]
+    maximum = list(maximum)
+    maximum = int(maximum[0])
+
+    val = (y, maximum)
+    sql = "INSERT INTO weekly_maxes (appid, max) VALUES (%s, %s)"
+    cursor.execute(sql, val)
     db.commit()
     temp += 1
 
-#cursor.execute("DELETE FROM daily_table")
+cursor.execute("DELETE FROM daily_table")
